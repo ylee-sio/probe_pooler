@@ -1,9 +1,9 @@
 #!/bin/bash
 session_record_num=$(shuf -i 100000000-999999999 -n 1)
-timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+timestamp=$(date +%c)
 read -p 'username: ' username
-ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | sort | uniq > .current_total_probe_list.txt
-#ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | parallel "dirname {}" | sort | uniq > current_total_probe_pool_list.txt
+ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | sort | uniq > .current_total_probe_paths_list.txt
+ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | cut -d "/" -f 6 | sort | uniq > .current_total_probe_pools_list.txt
 
 # db should be where ever all probe directories are located
 db="~/probe_pooler/.probes"
@@ -34,19 +34,19 @@ for (( p=1; p<=$pool_length; p++ ))
    temp_genename=$(sed $c'q;d' .tmp/"subpool_000$p"/temp_genenames.txt)
 	temp_combo_search_term=$(sed $c'q;d' .tmp/"subpool_000$p"/temp_combos.txt)
 
-   if grep -q "$temp_acc_search_term" .current_total_probe_list.txt
+   if grep -q "$temp_acc_search_term" .current_total_probe_paths_list.txt
       then
-      grep "$temp_acc_search_term" .current_total_probe_list.txt | cut -d "/" -f 6 > ~/probe_pooler/"$session_record_num"_duplicates.txt
+      grep "$temp_acc_search_term" .current_total_probe_paths_list.txt | cut -d "/" -f 6 > ~/probe_pooler/"$session_record_num"_duplicates.txt
       echo "It looks like we've ordered $temp_acc_search_term in the past."
       echo "The user inputted gene name for $temp_acc_search_term is $temp_genename."
-      printf "$temp_acc_search_term is currently present in the following pools:\n"
+      printf "$temp_acc_search_term is currently present in the following pools: "
       cat "$session_record_num"_duplicates.txt
 
       read -p "Continue with pooling? (Enter y/n): " duplicate_check_answer
-
+      echo ""
       if [ "$duplicate_check_answer" = 'y' ]
-      then 
-         
+      then
+         echo ""
          echo "Creating pool..."
 
       elif [ "$duplicate_check_answer" = 'n' ]
@@ -57,14 +57,15 @@ for (( p=1; p<=$pool_length; p++ ))
          echo "Please use the info in the file to remove duplicates. Update your probe request sheet and try again."
          rm -rf ~/probe_pooler/.tmp/*
          rm -rf ~/probe_pooler/.all_probe_pools/"$session_record_num"*
-         ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | sort | uniq > .current_total_probe_list.txt
+         ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | sort | uniq > .current_total_probe_paths_list.txt
+         ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | cut -d "/" -f 6 | sort | uniq > .current_total_probe_pools_list.txt
          exit 0
       
       fi
    
    else
    
-      echo "Created subpool_000"$p" for "$temp_acc_search_term"\n."
+      echo "Created subpool_000"$p" for "$temp_acc_search_term"."
    
    fi
 
@@ -79,24 +80,53 @@ for (( p=1; p<=$pool_length; p++ ))
    sed -i '1s/^/Pool name,Sequence\n/' ~/probe_pooler/.tmp/"subpool_000$p"/final_subpool.csv
    mv ~/probe_pooler/.tmp/"subpool_000$p"/*temp* ~/probe_pooler/.tmp/"subpool_000$p"/.tmp
    
-   # creating redundancies and transferring to permanent sharable location
+   # creating summary report of each pool
    subsession_record_num=$(shuf -i 100000000-999999999 -n 1)
-   printf "session_record_num: "$session_record_num"\nsubsession_record_num: "$subsession_record_num"\ntimestamp: "$timestamp"\nuser: "$username"\n\n" > ~/probe_pooler/.tmp/"subpool_000$p"/session_record.txt
+   num_line_final_pool=$(cat ~/probe_pooler/.tmp/"subpool_000$p"/final_subpool.csv | wc -l)
+   price=$(echo "((($num_line_final_pool * 45)-3300)*0.02)+66" | bc -l)
+   printf "session_record_num: $session_record_num" > ~/probe_pooler/.tmp/"subpool_000$p"/session_record.txt
+   sed -i -e '$a\subsession_record_num: '$subsession_record_num ~/probe_pooler/.tmp/subpool_000$p/session_record.txt
+   sed -i -e '$a\estimated_price: '$price ~/probe_pooler/.tmp/subpool_000$p/session_record.txt
+   sed -i -e '$a\timestamp: '"$timestamp" ~/probe_pooler/.tmp/subpool_000$p/session_record.txt
+   sed -i -e '$a\user: '$username ~/probe_pooler/.tmp/subpool_000$p/session_record.txt
+   sed -i -e '$a\ ' ~/probe_pooler/.tmp/subpool_000$p/session_record.txt
+
    mv ~/probe_pooler/.tmp/"subpool_000$p" ~/probe_pooler/.all_probe_pools/"$session_record_num"_"$pool_id"
-   cp ~/probe_pooler/place_request_form_here/* .all_probe_pools/"$session_record_num"_"$pool_id"/original_request_form.csv
+   cp ~/probe_pooler/place_request_form_here/* .all_probe_pools/"$session_record_num"_"$pool_id"/pool_content_mapping.csv
    
 done
 
-read -p "Notes of these/this pool: " > message.txt
-read -p "Enter email address to send to: " user_email_address
-gzip -r ~/probe_pooler/.all_probe_pools/"$session_record_num"* > "$session_record_num.gz"
-zip -r ~/probe_pooler/.all_probe_pools/"$session_record_num"* > "$session_record_num.zip"
+read -p "Notes of these/this pool: " message
+echo "$message" > message.txt
+read -p "(MANDATORY) Enter your email address: " user_email_address
 
-mail -A "$session_record_num.gz" -A "$session_record_num.zip" -s "$session_record_num" "$user_email_address" <<< message.txt
+mkdir ~/$session_record_num
+cp -r ~/probe_pooler/.all_probe_pools/$session_record_num* ~/$session_record_num
+#tar -zcf -r ~/probe_pooler/.all_probe_pools/"$session_record_num"* "$session_record_num.tar.gz" 
+zip -rq ~/$session_record_num.zip ~/$session_record_num
+mv ~/$session_record_num.zip .gdrive_probe_pool_share
+
+cat message.txt | mail -s "probe pooling receipt: $session_record_num" -A ~/"$session_record_num.zip" "$user_email_address"
 
 rm ~/probe_pooler/.tmp/temp_pool.txt
 rm ~/probe_pooler/*duplicates*
-#rm ~/probe_pooler/place_request_form_here/*
-#rm -rf "$session_record_num.gz"
-#rm -rf "$session_record_num.zip"
-#rm -rf message.txt
+rm -r ~/probe_pooler/message*
+
+echo "******************** SUMMARY ********************"
+echo " "
+ls ~/$session_record_num/*/session_record.txt | parallel "cat {}"
+
+for i in ~/$session_record_num/*
+do
+echo ""
+show_pool=$(echo $i)
+basename $show_pool
+cat $i/session_record.txt
+cat $i/*input*
+done
+echo ""
+echo "YOUR POOL RECEIPT NUMBER: $session_record_num"
+echo ""
+
+rm ~/probe_pooler/place_request_form_here/*
+rm -rf ~/$session_record_num*
