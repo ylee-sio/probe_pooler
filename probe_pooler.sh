@@ -2,7 +2,7 @@
 session_record_num=$(shuf -i 100000000-999999999 -n 1)
 timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 read -p 'username: ' username
-ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | sort | uniq > current_total_probe_list.txt
+ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | sort | uniq > .current_total_probe_list.txt
 #ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | parallel "dirname {}" | sort | uniq > current_total_probe_pool_list.txt
 
 # db should be where ever all probe directories are located
@@ -34,9 +34,9 @@ for (( p=1; p<=$pool_length; p++ ))
    temp_genename=$(sed $c'q;d' .tmp/"subpool_000$p"/temp_genenames.txt)
 	temp_combo_search_term=$(sed $c'q;d' .tmp/"subpool_000$p"/temp_combos.txt)
 
-   if grep -q "$temp_acc_search_term" current_total_probe_list.txt
+   if grep -q "$temp_acc_search_term" .current_total_probe_list.txt
       then
-      grep "$temp_acc_search_term" current_total_probe_list.txt | cut -d "/" -f 6 > ~/probe_pooler/"$session_record_num"_duplicates.txt
+      grep "$temp_acc_search_term" .current_total_probe_list.txt | cut -d "/" -f 6 > ~/probe_pooler/"$session_record_num"_duplicates.txt
       echo "It looks like we've ordered $temp_acc_search_term in the past."
       echo "The user inputted gene name for $temp_acc_search_term is $temp_genename."
       printf "$temp_acc_search_term is currently present in the following pools:\n"
@@ -55,6 +55,9 @@ for (( p=1; p<=$pool_length; p++ ))
          echo "Your session ID is $session_record_num."
          echo "$session_record_num_duplicates.txt has been placed in your home folder."
          echo "Please use the info in the file to remove duplicates. Update your probe request sheet and try again."
+         rm -rf ~/probe_pooler/.tmp/*
+         rm -rf ~/probe_pooler/.all_probe_pools/"$session_record_num"*
+         ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | sort | uniq > .current_total_probe_list.txt
          exit 0
       
       fi
@@ -69,7 +72,7 @@ for (( p=1; p<=$pool_length; p++ ))
 	sed 1d .tmp/"subpool_000$p"/*temp_$temp_combo_search_term*.csv > .tmp/"subpool_000$p"/$temp_combo_search_term.temp_cleaned.csv
    
    done
-   echo "*************Hello***************"
+   
    mkdir ~/probe_pooler/.tmp/"subpool_000$p"/.tmp
    ls ~/probe_pooler/.tmp/"subpool_000$p"/*.temp_cleaned.csv | parallel "sed 1d {}" > ~/probe_pooler/.tmp/"subpool_000$p"/temp_subpool_1.csv
    awk -v pool_name="$pool_id" '$1=pool_name' FS=, OFS=, ~/probe_pooler/.tmp/"subpool_000$p"/temp_subpool_1.csv > ~/probe_pooler/.tmp/"subpool_000$p"/final_subpool.csv
@@ -80,8 +83,20 @@ for (( p=1; p<=$pool_length; p++ ))
    subsession_record_num=$(shuf -i 100000000-999999999 -n 1)
    printf "session_record_num: "$session_record_num"\nsubsession_record_num: "$subsession_record_num"\ntimestamp: "$timestamp"\nuser: "$username"\n\n" > ~/probe_pooler/.tmp/"subpool_000$p"/session_record.txt
    mv ~/probe_pooler/.tmp/"subpool_000$p" ~/probe_pooler/.all_probe_pools/"$session_record_num"_"$pool_id"
-
+   cp ~/probe_pooler/place_request_form_here/* .all_probe_pools/"$session_record_num"_"$pool_id"/original_request_form.csv
    
 done
 
+read -p "Notes of these/this pool: " > message.txt
+read -p "Enter email address to send to: " user_email_address
+gzip -r ~/probe_pooler/.all_probe_pools/"$session_record_num"* > "$session_record_num.gz"
+zip -r ~/probe_pooler/.all_probe_pools/"$session_record_num"* > "$session_record_num.zip"
+
+mail -A "$session_record_num.gz" -A "$session_record_num.zip" -s "$session_record_num" "$user_email_address" <<< message.txt
+
 rm ~/probe_pooler/.tmp/temp_pool.txt
+rm ~/probe_pooler/*duplicates*
+#rm ~/probe_pooler/place_request_form_here/*
+#rm -rf "$session_record_num.gz"
+#rm -rf "$session_record_num.zip"
+#rm -rf message.txt
