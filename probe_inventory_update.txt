@@ -1,0 +1,25 @@
+These are the current probes we have in stock (including the pools generated with this run):
+
+accession,hairpin,pool,common_gene_name,ref_species
+NM_001130718.1,b4,3,ago4,sp
+NM_214519.1,b1,1,endo16,sp
+XM_030996067.1,b5,1,pum3,sp
+XM_041596476.1,b2,1,gene_a
+XM_041596488.1,b2,3,gene_i
+XM_041596513.1,b1,1,gene_b
+XM_041596532.1,b3,3,gene_j
+XM_041596543.1,b4,1,gene_c
+XM_041596560.1,b5,3,gene_k
+XM_041596606.1,b3,1,gene_d
+XM_041596659.1,b2,2,gene_e
+XM_041596937.1,b3,2,gene_f
+XM_041597044.1,b4,2,gene_g
+XM_041597158.1,b1,2,gene_h
+XM_041600410.1,b2,1,hnf1a,lv
+XM_041602345.1,b1,2,manrc1a,lv
+XM_041608256.1,b1,3,isl1,lv
+XM_041617809.1,b2,2,soxe,lv
+XM_041619720.1,b2,3,dmrt3,lv
+XM_775296.5,b3,1,hnf4a,sp
+XM_776070.5,b3,2,a1cf,sp
+ 

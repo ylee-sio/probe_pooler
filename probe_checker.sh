@@ -4,7 +4,7 @@
 db="~/probe_pooler/.probes"
 
 # accessions
-acc=$(cat ~/probe_pooler/place_request_form_here/test_form.csv | cut -d "," -f 1 | sed 1d)
+acc=$(cat ~/probe_pooler/place_request_form_here/*csv | cut -d "," -f 1 | sed 1d)
 
 # hairpin for each probe/accession
 hp=$(cat ~/probe_pooler/place_request_form_here/*csv | sed 1d | cut -d "," -f 2 | sed 1d)
