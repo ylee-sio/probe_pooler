@@ -107,20 +107,29 @@ total_session_price=$(paste -sd+ total_session_price.txt | bc)
 
 read -p "Notes of these/this pool: " message
 echo "$message" > message.txt
-sed -i -e '$a\' message.txt
-sed -i -e '$a\Correctly formatted oPools files are attached in the zipped folder. Probe mappings to each order are included as well.' message.txt
-sed -i -e '$a\Unique numbers and IDs generated at this point in the pipeline will be linked to all metadata related the experiments using these oligos. ' message.txt
-sed -i -e '$a\DO NOT attempt to rename or reorganize files in the attached directory.' message.txt
-sed -i -e '$a\' message.txt
+sed -i -e '$a\ ' message.txt
+sed -i '1s/^/Notes:\n/' message.txt
+sed -i -e '$a\ ' message.txt
 sed -i -e '$a\receipt_id: '$receipt_record_num message.txt
 sed -i -e '$a\session_record_num: '$session_record_num message.txt
 sed -i -e '$a\timestamp: '"$timestamp" message.txt
 sed -i -e '$a\user: '$username message.txt
 sed -i -e '$a\supervisor/PI: '$super message.txt
+sed -i -e '$a\*****************************************************************************************************' message.txt
 sed -i -e '$a\estimated_price: '$total_session_price message.txt
-sed -i -e '$a\' message.txt
+num_pools=$(ls ~/probe_pooler/.all_probe_pools | grep "$session_record_num" | wc -l)
+sed -i -e '$a\number of pools generated: '$num_pools message.txt
+num_genes=$(ls ~/probe_pooler/.all_probe_pools/$session_record_num*/pool_content_mapping.csv | parallel "sed 1d {}" | sort | uniq | wc -l)
+sed -i -e '$a\total number of genes across pools: '$num_genes message.txt
+sed -i -e '$a\ ' message.txt
 sed -i -e '$a\You can check the attached probe_inventory_update.txt to see which probes we currently have in stock.' message.txt
+sed -i -e '$a\probe_inventory_update.txt includes the probes submitted in this run.' message.txt
 sed -i -e '$a\' message.txt
+sed -i -e '$a\*****************************************************************************************************' message.txt
+sed -i -e '$a\ ' message.txt
+sed -i -e '$a\Correctly formatted oPools files are attached in the zipped folder. Probe mappings to each order are included as well.' message.txt
+sed -i -e '$a\Unique numbers and IDs generated at this point in the pipeline will be linked to all metadata related the experiments using these oligos. ' message.txt
+sed -i -e '$a\DO NOT attempt to rename or reorganize files in this directory.' message.txt
 sed -i -e '$a\This message has been auto generated with probe_pooler_v1 on pictus-2l.' message.txt
 
 unique_probes_update=$(ls .all_probe_pools/*/*content* | parallel "sed 1d {}" | sort | uniq)
@@ -130,25 +139,27 @@ sed -i '1s/^/\n/' probe_inventory_update.txt
 sed -i '1s/^/These are the current probes we have in stock (including the pools generated with this run):\n/' probe_inventory_update.txt
 sed -i -e '$a\ ' probe_inventory_update.txt
 
+mv probe_inventory_update.txt .all_probe_pools/$session_record_num*/probe_inventory_update.txt
 
 read -p "(MANDATORY) Enter your email address: " user_email_address
-read -p "(MANDATORY) Enter your PI's email address: " user_email_address
+read -p "(MANDATORY) Enter your PI's email address: " pi_email_address
 
-mkdir ~/$session_record_num
-cp -r ~/probe_pooler/.all_probe_pools/$session_record_num* ~/$session_record_num
-zip -rq ~/$session_record_num.zip ~/$session_record_num
+mkdir $session_record_num
+cp -r ~/probe_pooler/.all_probe_pools/$session_record_num* $session_record_num
+zip -rq $session_record_num.zip $session_record_num
 
-cat message.txt | mail -s "probe pooling receipt: $receipt_record_num" -A ~/"$session_record_num.zip" -A probe_inventory_update.txt "$user_email_address"
-cat message.txt | mail -s "probe pooling receipt: $receipt_record_num" -A ~/"$session_record_num.zip" -A probe_inventory_update.txt "$user_email_address"
+cat message.txt | mail -s "probe pooling receipt: $receipt_record_num" -A "$session_record_num.zip" -A probe_inventory_update.txt "$user_email_address"
+cat message.txt | mail -s "probe pooling receipt: $receipt_record_num" -A "$session_record_num.zip" -A probe_inventory_update.txt "$pi_email_address"
 
 rm ~/probe_pooler/.tmp/temp_pool.txt
 rm ~/probe_pooler/*duplicates*
-rm -r ~/probe_pooler/message*
+rm -r probe_pooler/message*
+rm total_session_price.txt
 
 echo "******************** SUMMARY ********************"
-#ls ~/$session_record_num/*/session_record.txt | parallel "cat {}"
+ls $session_record_num/*/session_record.txt | parallel "cat {}"
 
-for i in ~/$session_record_num/*
+for i in $session_record_num/*
 do
 echo ""
 show_pool=$(echo $i)
@@ -160,7 +171,8 @@ echo "*************************************************"
 done
 echo ""
 echo "YOUR POOL RECEIPT NUMBER: $receipt_record_num"
+echo "Your formatted IDT oPools probe pool files have been sent to $user_email address and $pi_email_address."
 echo ""
-
-#rm ~/probe_pooler/place_request_form_here/*
-rm -rf ~/$session_record_num*
+cat message.txt
+rm ~/probe_pooler/place_request_form_here/*
+rm -rf $session_record_num*
