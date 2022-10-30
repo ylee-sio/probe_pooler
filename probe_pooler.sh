@@ -19,11 +19,11 @@ for (( p=1; p<=$pool_length; p++ ))
    pool_id=HL_HCR_PSET_"$new_probe_num"
    
    mkdir ~/probe_pooler/.tmp/"subpool_000$p"
-   csvgrep -c pool -m "$p" place_request_form_here/test_form.csv > ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_input_map.csv
-   cat ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_input_map.csv | cut -d "," -f 1 | sed 1d > ~/probe_pooler/.tmp/"subpool_000$p"/temp_acc.txt
-   cat ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_input_map.csv | cut -d "," -f 2 | sed 1d > ~/probe_pooler/.tmp/"subpool_000$p"/temp_hp.txt
-   cat ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_input_map.csv | cut -d "," -f 3 | sed 1d > ~/probe_pooler/.tmp/"subpool_000$p"/temp_pool.txt
-   cat ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_input_map.csv | cut -d "," -f 4 | sed 1d > ~/probe_pooler/.tmp/"subpool_000$p"/temp_genenames.txt
+   csvgrep -c pool -m "$p" place_request_form_here/test_form.csv > ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_pool_map.csv
+   cat ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_pool_map.csv | cut -d "," -f 1 | sed 1d > ~/probe_pooler/.tmp/"subpool_000$p"/temp_acc.txt
+   cat ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_pool_map.csv | cut -d "," -f 2 | sed 1d > ~/probe_pooler/.tmp/"subpool_000$p"/temp_hp.txt
+   cat ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_pool_map.csv | cut -d "," -f 3 | sed 1d > ~/probe_pooler/.tmp/"subpool_000$p"/temp_pool.txt
+   cat ~/probe_pooler/.tmp/"subpool_000$p"/"$session_record_num"_pool_map.csv | cut -d "," -f 4 | sed 1d > ~/probe_pooler/.tmp/"subpool_000$p"/temp_genenames.txt
    
    temp_acc_length=$(cat .tmp/"subpool_000$p"/temp_acc.txt | wc -l)
    paste -d "_" ~/probe_pooler/.tmp/"subpool_000$p"/temp_acc.txt ~/probe_pooler/.tmp/"subpool_000$p"/temp_hp.txt > ~/probe_pooler/.tmp/"subpool_000$p"/temp_combos.txt
@@ -102,9 +102,7 @@ read -p "(MANDATORY) Enter your email address: " user_email_address
 
 mkdir ~/$session_record_num
 cp -r ~/probe_pooler/.all_probe_pools/$session_record_num* ~/$session_record_num
-#tar -zcf -r ~/probe_pooler/.all_probe_pools/"$session_record_num"* "$session_record_num.tar.gz" 
 zip -rq ~/$session_record_num.zip ~/$session_record_num
-mv ~/$session_record_num.zip .gdrive_probe_pool_share
 
 cat message.txt | mail -s "probe pooling receipt: $session_record_num" -A ~/"$session_record_num.zip" "$user_email_address"
 
@@ -122,7 +120,7 @@ echo ""
 show_pool=$(echo $i)
 basename $show_pool
 cat $i/session_record.txt
-cat $i/*input*
+cat $i/*pool_map*
 done
 echo ""
 echo "YOUR POOL RECEIPT NUMBER: $session_record_num"
