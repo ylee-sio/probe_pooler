@@ -173,7 +173,7 @@ done
 echo ""
 echo "YOUR POOL RECEIPT NUMBER: $receipt_record_num"
 echo "Your formatted IDT oPools probe pool files will be sent to $user_email_address and $pi_email_address."
-echo ""
+echo "It may take up to 15 minutes for arrival."
 cp probe_inventory_update.txt $session_record_num/probe_inventory_update.txt
 zip -rq $session_record_num.zip $session_record_num
 
