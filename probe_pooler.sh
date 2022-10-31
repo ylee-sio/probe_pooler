@@ -5,13 +5,17 @@ receipt_record_num=$(shuf -i 100000000-999999999 -n 1)
 timestamp=$(date +%c)
 read -p 'Username: ' username
 read -p 'Supervisor/PI: ' super
+echo " "
 first_run_pass=$(ls ~/probe_pooler/.all_probe_pools/ | wc -l)
 if [ $first_run_pass -gt 1 ]
 then
+
 ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | sort | uniq > .current_total_probe_paths_list.txt
 ls ~/probe_pooler/.all_probe_pools/*/.tmp/*temp_XM* | cut -d "/" -f 6 | sort | uniq > .current_total_probe_pools_list.txt
-rm ~/*duplicates*
+#rm ~/*duplicates*
 
+else
+   echo "First run."
 fi
 # db should be where ever all probe directories are located
 db="~/probe_pooler/.probes"
@@ -47,16 +51,18 @@ for (( p=1; p<=$pool_length; p++ ))
             then
             if grep -q "$temp_acc_search_term" .current_total_probe_paths_list.txt
             then
-            grep "$temp_acc_search_term" .current_total_probe_paths_list.txt | cut -d "/" -f 6 > ~/probe_pooler/"$session_record_num"_duplicates.txt
+            grep "$temp_acc_search_term" .current_total_probe_paths_list.txt | cut -d "/" -f 6 > "$session_record_num"_duplicates.txt
             echo "It looks like we've ordered $temp_acc_search_term in the past."
             echo "The user inputted gene name for $temp_acc_search_term is $temp_genename."
             printf "$temp_acc_search_term is currently present in the following pools: "
             cat "$session_record_num"_duplicates.txt
             read -p "Continue with pooling? (Enter y/n): " duplicate_check_answer
-            echo ""
+            
                if [ "$duplicate_check_answer" = 'y' ]
                then
-               echo "Creating pool..."
+               echo "Preapred $temp_combo_search_term for pooling."
+               echo ""
+               echo "*********************************************"
                   elif [ "$duplicate_check_answer" = 'n' ]
                   then
                   echo "Stopped."
@@ -79,7 +85,7 @@ for (( p=1; p<=$pool_length; p++ ))
    done
    
    mkdir ~/probe_pooler/.tmp/"subpool_000$p"/.tmp
-   ls ~/probe_pooler/.tmp/"subpool_000$p"/*.temp_cleaned.csv | parallel "sed 1d {}" > ~/probe_pooler/.tmp/"subpool_000$p"/temp_subpool_1.csv
+   cat ~/probe_pooler/.tmp/"subpool_000$p"/*.temp_cleaned.csv > ~/probe_pooler/.tmp/"subpool_000$p"/temp_subpool_1.csv
    awk -v pool_name="$pool_id" '$1=pool_name' FS=, OFS=, ~/probe_pooler/.tmp/"subpool_000$p"/temp_subpool_1.csv > ~/probe_pooler/.tmp/"subpool_000$p"/"$subsession_record_num"_final_subpool.csv
    sed -i '1s/^/Pool name,Sequence\n/' ~/probe_pooler/.tmp/"subpool_000$p"/"$subsession_record_num"_final_subpool.csv
    mv ~/probe_pooler/.tmp/"subpool_000$p"/*temp* ~/probe_pooler/.tmp/"subpool_000$p"/.tmp
@@ -110,17 +116,17 @@ echo "$message" > message.txt
 sed -i -e '$a\ ' message.txt
 sed -i '1s/^/Notes:\n/' message.txt
 sed -i -e '$a\ ' message.txt
-sed -i -e '$a\receipt_id: '$receipt_record_num message.txt
-sed -i -e '$a\session_record_num: '$session_record_num message.txt
-sed -i -e '$a\timestamp: '"$timestamp" message.txt
-sed -i -e '$a\user: '$username message.txt
-sed -i -e '$a\supervisor/PI: '$super message.txt
+sed -i -e '$a\Receipt ID: '$receipt_record_num message.txt
+sed -i -e '$a\Session record: '$session_record_num message.txt
+sed -i -e '$a\Timestamp: '"$timestamp" message.txt
+sed -i -e '$a\Requestor: '$username message.txt
+sed -i -e '$a\Supervisor/PI: '$super message.txt
 sed -i -e '$a\*****************************************************************************************************' message.txt
-sed -i -e '$a\estimated_price: '$total_session_price message.txt
+sed -i -e '$a\Estimated price: '$total_session_price message.txt
 num_pools=$(ls ~/probe_pooler/.all_probe_pools | grep "$session_record_num" | wc -l)
-sed -i -e '$a\number of pools generated: '$num_pools message.txt
+sed -i -e '$a\Number of pools generated: '$num_pools message.txt
 num_genes=$(ls ~/probe_pooler/.all_probe_pools/$session_record_num*/"$session_record_num"_pool_content_mapping.csv | parallel "sed 1d {}" | sort | uniq | wc -l)
-sed -i -e '$a\total number of genes across pools: '$num_genes message.txt
+sed -i -e '$a\Total number of probes pooled in session: '$num_genes message.txt
 sed -i -e '$a\ ' message.txt
 sed -i -e '$a\You can check the attached probe_inventory_update.txt to see which probes we currently have in stock.' message.txt
 sed -i -e '$a\probe_inventory_update.txt includes the probes submitted in this run.' message.txt
@@ -139,25 +145,14 @@ sed -i '1s/^/\n/' probe_inventory_update.txt
 sed -i '1s/^/These are the current probes we have in stock (including the pools generated with this run):\n/' probe_inventory_update.txt
 sed -i -e '$a\ ' probe_inventory_update.txt
 
-mv probe_inventory_update.txt ~/probe_pooler/.all_probe_pools/"$session_record_num"_"$pool_id"/probe_inventory_update.txt
-
 read -p "(MANDATORY) Enter your email address: " user_email_address
 read -p "(MANDATORY) Enter your PI's email address: " pi_email_address
 
 mkdir $session_record_num
 cp -r ~/probe_pooler/.all_probe_pools/$session_record_num* $session_record_num
-zip -rq $session_record_num.zip $session_record_num
-
-cat message.txt | mail -s "probe pooling receipt: $receipt_record_num" -A "$session_record_num.zip" -A probe_inventory_update.txt "$user_email_address"
-cat message.txt | mail -s "probe pooling receipt: $receipt_record_num" -A "$session_record_num.zip" -A probe_inventory_update.txt "$pi_email_address"
-
-rm ~/probe_pooler/.tmp/temp_pool.txt
-rm -r probe_pooler/message*
-rm total_session_price.txt
+cp probe_inventory_update.txt ~/probe_pooler/.all_probe_pools/"$session_record_num"_"$pool_id"/probe_inventory_update.txt
 
 echo "******************** SUMMARY ********************"
-ls $session_record_num/*/session_record.txt | parallel "cat {}"
-
 for i in $session_record_num/*
 do
 echo ""
@@ -166,12 +161,29 @@ basename $show_pool
 cat $i/session_record.txt
 echo ""
 cat $i/*pool_map*
+
+csv_path=$(ls $i/*final*)
+csv_name=$(basename $csv_path)
+xlsx_name=$(echo "$csv_name" | cut -d "." -f 1)
+
+python ~/probe_pooler/csv_to_xlsx.py ~/$show_pool/$csv_name ~/$show_pool/$xlsx_name 
+
 echo "*************************************************"
 done
 echo ""
 echo "YOUR POOL RECEIPT NUMBER: $receipt_record_num"
-echo "Your formatted IDT oPools probe pool files have been sent to $user_email_address and $pi_email_address."
+echo "Your formatted IDT oPools probe pool files will be sent to $user_email_address and $pi_email_address."
 echo ""
+cp probe_inventory_update.txt $session_record_num/probe_inventory_update.txt
+zip -rq $session_record_num.zip $session_record_num
+
+cat message.txt | mail -s "probe pooling receipt: $receipt_record_num" -A "$session_record_num.zip" -A probe_inventory_update.txt labhamdoun@gmail.com
+cat message.txt | mail -s "probe pooling receipt: $receipt_record_num" -A "$session_record_num.zip" -A probe_inventory_update.txt "$user_email_address"
+cat message.txt | mail -s "probe pooling receipt: $receipt_record_num" -A "$session_record_num.zip" -A probe_inventory_update.txt "$pi_email_address"
+
+rm ~/probe_pooler/.tmp/temp_pool.txt
+rm total_session_price.txt
 rm message.txt
-#rm $form
+rm $form
 rm -rf $session_record_num*
+rm -rf probe_inventory_update.txt
